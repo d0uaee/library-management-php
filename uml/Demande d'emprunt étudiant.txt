@@ -1,0 +1,107 @@
+@startuml
+title Demande d'emprunt étudiant
+
+actor "Étudiant" as Etudiant
+boundary "Interface catalogue" as Catalogue
+control "Gestion des emprunts étudiant" as Emprunt
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+Etudiant -> Catalogue : Demander l'emprunt d'un livre
+Catalogue -> Emprunt : Ouvrir le traitement de demande(id_livre)
+Emprunt -> Security : vérifierAccèsÉtudiant()
+Security --> Emprunt : accès autorisé
+
+Emprunt -> Emprunt : vérifierIdentifiantLivre(id_livre)
+
+alt Identifiant invalide
+    Emprunt --> Catalogue : Afficher erreur\n"Livre invalide"
+
+else Identifiant valide
+    Emprunt -> DB : récupérerDétailsLivrePourEmprunt(id_livre)
+    DB --> Emprunt : livre / aucun livre
+
+    alt Livre introuvable
+        Emprunt --> Catalogue : Afficher erreur\n"Livre introuvable"
+
+    else Livre trouvé
+        Emprunt -> Security : vérifierÉligibilitéEmprunt(id_etudiant)
+        Security --> Emprunt : autorisé / refusé + message
+
+        alt Emprunt non autorisé
+            Emprunt --> Catalogue : Afficher page\navec message d'erreur
+
+        else Livre indisponible
+            Emprunt --> Catalogue : Afficher page\n"Livre indisponible → Réserver ?"
+
+        else Emprunt possible
+            Emprunt --> Catalogue : Afficher page de confirmation
+        end
+    end
+end
+
+Etudiant -> Catalogue : Confirmer la demande
+Catalogue -> Emprunt : Soumettre la demande d'emprunt(id_livre)
+
+Emprunt -> DB : ouvrirTransaction()
+
+Emprunt -> Security : vérifierÉligibilitéEmprunt(id_etudiant)
+Security --> Emprunt : autorisé / refusé + message
+
+alt Emprunt impossible
+    Emprunt -> DB : annulerTransaction()
+    Emprunt --> Catalogue : Afficher erreur
+
+else Emprunt possible
+    Emprunt -> DB : récupérerDisponibilitéLivre(id_livre)
+    DB --> Emprunt : livre / aucun livre
+
+    alt Livre introuvable
+        Emprunt -> DB : annulerTransaction()
+        Emprunt --> Catalogue : Afficher erreur\n"Livre introuvable"
+
+    else Livre indisponible
+        Emprunt -> DB : annulerTransaction()
+        Emprunt --> Catalogue : Afficher erreur\n"Ce livre n'est plus disponible.\nVous pouvez le réserver."
+
+    else Livre disponible
+        Emprunt -> DB : vérifierEmpruntActifDuLivre(id_etudiant, id_livre)
+        DB --> Emprunt : existe / n'existe pas
+
+        alt Déjà emprunté
+            Emprunt -> DB : annulerTransaction()
+            Emprunt --> Catalogue : Afficher erreur\n"Vous avez déjà emprunté ce livre et ne l'avez pas encore retourné."
+
+        else Pas déjà emprunté
+            Emprunt -> DB : vérifierDemandeEmpruntEnAttente(id_etudiant, id_livre)
+            DB --> Emprunt : existe / absente
+
+            alt Demande déjà en attente
+                Emprunt -> DB : annulerTransaction()
+                Emprunt --> Catalogue : Afficher erreur\n"Vous avez déjà une demande d'emprunt en attente pour ce livre."
+
+            else Nouvelle demande autorisée
+                Emprunt -> DB : créerDemandeEmprunt(id_etudiant, id_livre)
+                DB --> Emprunt : demande créée
+
+                Emprunt -> DB : réserverExemplaireDisponible(id_livre)
+                DB --> Emprunt : réservation du stock réussie / échouée
+
+                alt Réservation du stock échoue
+                    Emprunt -> DB : annulerTransaction()
+                    Emprunt --> Catalogue : Afficher erreur\n"Ce livre n'est plus disponible. Vous pouvez le réserver."
+
+                else Stock réservé
+                    opt Notification
+                        Emprunt -> DB : créerNotificationDemandeEmprunt(id_etudiant)
+                    end
+
+                    Emprunt -> DB : validerTransaction()
+                    Emprunt --> Catalogue : Afficher confirmation\net accéder à mes emprunts
+                end
+            end
+        end
+    end
+end
+
+@enduml

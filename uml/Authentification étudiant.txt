@@ -1,0 +1,54 @@
+@startuml
+title Authentification — Étudiant
+
+actor "Étudiant" as Etudiant
+boundary "Interface de connexion" as IHM
+control "Authentification étudiant" as Login
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+Etudiant -> IHM : Saisir email et mot de passe
+IHM -> Login : Soumettre la demande d'authentification
+
+Login -> Security : nettoyerEntrée(email)
+Security --> Login : email nettoyé
+
+alt Champs vides
+    Login --> IHM : Afficher erreur\n"Veuillez remplir tous les champs."
+
+else Champs remplis
+    Login -> Security : validerEmailAcadémique(email)
+    Security --> Login : valide / invalide
+
+    alt Email académique invalide
+        Login --> IHM : Afficher erreur\n"Utilisez votre email académique ENSAM."
+
+    else Email valide
+        Login -> DB : rechercherÉtudiantParEmail(email)
+        DB --> Login : compte étudiant / introuvable
+
+        alt Étudiant introuvable
+            Login --> IHM : Afficher erreur\n"Email ou mot de passe incorrect."
+
+        else Étudiant trouvé
+            Login -> Login : vérifierMotDePasse(saisi, stocké)
+
+            alt Mot de passe incorrect
+                Login --> IHM : Afficher erreur\n"Email ou mot de passe incorrect."
+
+            else Mot de passe correct
+                Login -> Login : vérifierStatutCompte()
+
+                alt Compte bloqué
+                    Login --> IHM : Afficher erreur\n"Compte bloqué. Contactez la bibliothèque."
+
+                else Compte actif
+                    Login -> Login : ouvrirSessionÉtudiant()
+                    Login --> IHM : Accéder au catalogue
+                end
+            end
+        end
+    end
+end
+
+@enduml

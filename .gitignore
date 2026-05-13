@@ -1,0 +1,4 @@
+.env
+config/db_credentials.php
+*.log
+__pycache__/

@@ -1,0 +1,102 @@
+@startuml
+title Système de messagerie admin–étudiant
+
+actor "Étudiant" as Etudiant
+actor "Admin" as Admin
+boundary "Interface de messagerie" as IHM
+control "Messagerie étudiant" as MsgEtudiant
+control "Messagerie admin" as MsgAdmin
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+group Envoi d'un message par l'étudiant
+    Etudiant -> IHM : Rédiger et envoyer un message
+    IHM -> MsgEtudiant : Soumettre le message(interet, contenu)
+
+    MsgEtudiant -> Security : vérifierAccèsÉtudiant()
+    Security --> MsgEtudiant : accès autorisé
+
+    MsgEtudiant -> MsgEtudiant : nettoyerChampsMessage()
+
+    alt Champs vides
+        MsgEtudiant --> IHM : Afficher erreur\n"Veuillez remplir tous les champs."
+
+    else Champs remplis
+        MsgEtudiant -> DB : récupérerAdministrateurDisponible()
+        DB --> MsgEtudiant : administrateur / aucun administrateur
+
+        alt Aucun administrateur disponible
+            MsgEtudiant --> IHM : Afficher erreur\n"Aucun administrateur disponible."
+
+        else Administrateur trouvé
+            MsgEtudiant -> DB : créerMessageÉtudiant(id_etudiant, id_admin, interet, message)
+            DB --> MsgEtudiant : message enregistré
+
+            MsgEtudiant --> IHM : Afficher confirmation\n"Message envoyé avec succès."
+        end
+    end
+end
+
+group Consultation et réponse de l'admin
+    Admin -> IHM : Ouvrir une conversation
+    IHM -> MsgAdmin : Demander une conversation(id_etudiant)
+
+    MsgAdmin -> Security : vérifierAccèsAdmin()
+    Security --> MsgAdmin : accès autorisé
+
+    MsgAdmin -> DB : récupérerConversationsÉtudiantes()
+    DB --> MsgAdmin : liste des conversations
+
+    MsgAdmin -> DB : récupérerÉtudiantConversation(id_etudiant)
+    DB --> MsgAdmin : étudiant actif
+
+    MsgAdmin -> DB : récupérerFilDiscussion(id_etudiant)
+    DB --> MsgAdmin : fil de discussion
+
+    Admin -> IHM : Envoyer une réponse
+    IHM -> MsgAdmin : Soumettre la réponse(id_etudiant, interet, contenu)
+
+    MsgAdmin -> Security : vérifierAccèsAdmin()
+    Security --> MsgAdmin : accès autorisé
+
+    alt Message vide
+        MsgAdmin --> IHM : Afficher erreur\n"Le message ne peut pas être vide."
+
+    else Message rempli
+        MsgAdmin -> DB : créerRéponseAdmin(id_etudiant, id_admin, interet, message)
+        DB --> MsgAdmin : réponse enregistrée
+
+        MsgAdmin -> DB : créerNotificationMessage(id_etudiant)
+        DB --> MsgAdmin : notification créée
+
+        MsgAdmin --> IHM : Afficher succès\n"Réponse envoyée avec succès et notification créée."
+    end
+end
+
+opt L'étudiant marque une réponse admin comme lue
+    Etudiant -> IHM : Demander le marquage d'un message admin
+    IHM -> MsgEtudiant : Soumettre le marquage(id_message)
+
+    MsgEtudiant -> Security : vérifierAccèsÉtudiant()
+    Security --> MsgEtudiant : accès autorisé
+
+    MsgEtudiant -> DB : marquerMessageAdminCommeLu(id_message, id_etudiant)
+    DB --> MsgEtudiant : mise à jour effectuée
+
+    MsgEtudiant --> IHM : Afficher confirmation
+end
+
+opt L'admin marque un message étudiant comme lu
+    Admin -> IHM : Demander le marquage d'un message étudiant
+    IHM -> MsgAdmin : Soumettre le marquage(id_message)
+
+    MsgAdmin -> Security : vérifierAccèsAdmin()
+    Security --> MsgAdmin : accès autorisé
+
+    MsgAdmin -> DB : marquerMessageÉtudiantCommeLu(id_message)
+    DB --> MsgAdmin : mise à jour effectuée
+
+    MsgAdmin --> IHM : Afficher confirmation\n"Message marqué comme lu."
+end
+
+@enduml

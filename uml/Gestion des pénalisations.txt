@@ -1,0 +1,53 @@
+@startuml
+title Gestion des pénalisations — Admin
+
+actor "Admin" as Admin
+boundary "Interface d'administration" as IHM
+control "Gestion des pénalisations" as Penalisation
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+group Pénalisation d'un étudiant
+    Admin -> IHM : Sélectionner un étudiant et une durée
+    IHM -> Penalisation : Soumettre la pénalisation(id_etudiant, durée)
+
+    Penalisation -> Security : vérifierAccèsAdmin()
+    Security --> Penalisation : accès autorisé
+
+    Penalisation -> Penalisation : calculerDateDeDésactivation()
+
+    Penalisation -> DB : ouvrirTransaction()
+
+    Penalisation -> DB : vérifierExistenceÉtudiant(id_etudiant)
+    DB --> Penalisation : existe / inexistant
+
+    alt Étudiant introuvable
+        Penalisation -> DB : annulerTransaction()
+        Penalisation --> IHM : Afficher erreur\n"Erreur : Étudiant introuvable."
+
+    else Étudiant trouvé
+        Penalisation -> DB : créerPénalisation(id_admin, id_etudiant, date_désactivation)
+        Penalisation -> DB : bloquerCompteÉtudiant(id_etudiant)
+
+        Penalisation -> DB : validerTransaction()
+        Penalisation --> IHM : Afficher succès\n"L'étudiant a été bloqué."
+    end
+end
+
+group Réactivation manuelle d'un étudiant
+    Admin -> IHM : Demander la réactivation
+    IHM -> Penalisation : Soumettre la réactivation(id_etudiant)
+
+    Penalisation -> Security : vérifierAccèsAdmin()
+    Security --> Penalisation : accès autorisé
+
+    Penalisation -> DB : ouvrirTransaction()
+
+    Penalisation -> DB : supprimerPénalisation(id_etudiant)
+    Penalisation -> DB : réactiverCompteÉtudiant(id_etudiant)
+
+    Penalisation -> DB : validerTransaction()
+    Penalisation --> IHM : Afficher succès\n"L'étudiant a été réactivé."
+end
+
+@enduml

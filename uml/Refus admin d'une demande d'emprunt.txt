@@ -1,0 +1,60 @@
+@startuml
+title Refus d'une demande d'emprunt — Administrateur
+
+actor "Administrateur" as Admin
+boundary "Interface d'administration" as IHM
+control "Gestion admin des emprunts" as Emprunts
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+Admin -> IHM : Demander le refus d'une demande
+IHM -> Emprunts : Soumettre le refus(id_demande)
+
+Emprunts -> Security : vérifierAccèsAdmin()
+Security --> Emprunts : accès autorisé
+
+Emprunts -> DB : ouvrirTransaction()
+
+Emprunts -> DB : récupérerDemandeAvecLivre(id_demande)
+DB --> Emprunts : demande + titre livre / introuvable
+
+alt Demande introuvable
+    Emprunts -> DB : annulerTransaction()
+    Emprunts --> IHM : Afficher erreur\n"Demande introuvable."
+
+else Demande trouvée
+    Emprunts -> DB : supprimerDemande(id_demande)
+    DB --> Emprunts : suppression confirmée
+
+    Emprunts -> DB : libérerExemplaire(id_livre)
+    DB --> Emprunts : stock restauré
+
+    Emprunts -> DB : notifierÉtudiant(id_etudiant, "demande refusée")
+    DB --> Emprunts : notification envoyée
+
+    Emprunts -> DB : récupérerProchainRéservataire(id_livre)
+    DB --> Emprunts : réservation suivante / aucune
+
+    alt Réservation en attente trouvée
+        Emprunts -> DB : créerDemandeDepuisRéservation(id_etudiant_réservataire, id_livre)
+        DB --> Emprunts : nouvelle demande créée
+
+        Emprunts -> DB : réserverExemplairePourRéservataire(id_livre)
+        DB --> Emprunts : exemplaire bloqué
+
+        Emprunts -> DB : notifierRéservataire(id_etudiant_réservataire, "demande créée en votre nom")
+        DB --> Emprunts : notification envoyée
+
+        Emprunts -> DB : supprimerRéservation(id_reservation)
+        DB --> Emprunts : réservation supprimée
+
+        Emprunts -> DB : validerTransaction()
+        Emprunts --> IHM : Afficher succès\n"Demande refusée et réservation promue."
+
+    else Aucune réservation en attente
+        Emprunts -> DB : validerTransaction()
+        Emprunts --> IHM : Afficher succès\n"Demande refusée. Livre de nouveau disponible."
+    end
+end
+
+@enduml

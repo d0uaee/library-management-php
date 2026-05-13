@@ -1,0 +1,29 @@
+@startuml
+title Annulation d'une réservation
+
+actor "Étudiant" as Etudiant
+boundary "Interface de réservation" as IHM
+control "Gestion des réservations" as Reservation
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+Etudiant -> IHM : Demander l'annulation d'une réservation
+IHM -> Reservation : Soumettre la demande d'annulation(id_reservation)
+
+Reservation -> Security : vérifierAccèsÉtudiant()
+Security --> Reservation : accès autorisé
+
+Reservation -> DB : récupérerRéservationÉtudiant(id_reservation, id_etudiant)
+DB --> Reservation : réservation / aucune réservation
+
+alt Réservation trouvée
+    Reservation -> DB : supprimerRéservation(id_reservation)
+    DB --> Reservation : annulation effectuée
+
+    Reservation --> IHM : Afficher confirmation\n"Votre réservation a été annulée avec succès."
+
+else Réservation introuvable ou non autorisée
+    Reservation --> IHM : Afficher erreur\n"Réservation introuvable ou non autorisée."
+end
+
+@enduml

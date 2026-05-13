@@ -1,0 +1,94 @@
+@startuml
+title Réservation d'un livre
+
+actor "Étudiant" as Etudiant
+boundary "Interface catalogue" as Catalogue
+control "Gestion des réservations" as Reservation
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+Etudiant -> Catalogue : Demander la réservation d'un livre
+Catalogue -> Reservation : Ouvrir le traitement de réservation(id_livre)
+Reservation -> Security : vérifierAccèsÉtudiant()
+Security --> Reservation : accès autorisé
+
+Reservation -> Reservation : vérifierIdentifiantLivre(id_livre)
+
+alt Identifiant invalide
+    Reservation --> Catalogue : Afficher erreur\n"Livre invalide"
+
+else Identifiant valide
+    Reservation -> DB : récupérerLivrePourRéservation(id_livre)
+    DB --> Reservation : livre / aucun livre
+
+    alt Livre introuvable
+        Reservation --> Catalogue : Afficher erreur\n"Livre introuvable"
+
+    else Livre trouvé
+        Reservation -> DB : récupérerStatutÉtudiant(id_etudiant)
+        DB --> Reservation : statut étudiant
+
+        alt Étudiant bloqué
+            Reservation --> Catalogue : Afficher page\n"Compte bloqué"
+
+        else Livre disponible
+            Reservation --> Catalogue : Afficher page\n"Livre disponible → emprunter"
+
+        else Livre indisponible
+            Reservation --> Catalogue : Afficher page de confirmation
+        end
+    end
+end
+
+Etudiant -> Catalogue : Confirmer la réservation
+Catalogue -> Reservation : Soumettre la réservation(id_livre)
+
+Reservation -> DB : ouvrirTransaction()
+
+Reservation -> DB : récupérerStatutÉtudiant(id_etudiant)
+DB --> Reservation : statut étudiant
+
+alt Étudiant bloqué
+    Reservation -> DB : annulerTransaction()
+    Reservation --> Catalogue : Afficher erreur\n"Votre compte est bloqué..."
+
+else Étudiant actif
+    Reservation -> DB : récupérerDisponibilitéLivre(id_livre)
+    DB --> Reservation : livre / aucun livre
+
+    alt Livre introuvable
+        Reservation -> DB : annulerTransaction()
+        Reservation --> Catalogue : Afficher erreur\n"Livre introuvable"
+
+    else Livre trouvé
+        Reservation -> DB : vérifierRéservationActive(id_etudiant, id_livre)
+        DB --> Reservation : existe / absente
+
+        alt Réservation déjà existante
+            Reservation -> DB : annulerTransaction()
+            Reservation --> Catalogue : Afficher erreur\n"Vous avez déjà une réservation active."
+
+        else Aucune réservation active
+            Reservation -> DB : compterRéservationsEnAttente(id_etudiant)
+            DB --> Reservation : nombre de réservations
+
+            alt Limite atteinte
+                Reservation -> DB : annulerTransaction()
+                Reservation --> Catalogue : Afficher erreur\n"Vous ne pouvez pas avoir plus de 3 réservations."
+
+            else Réservation autorisée
+                Reservation -> DB : créerRéservation(id_etudiant, id_livre)
+                DB --> Reservation : réservation créée
+
+                opt Notification disponible
+                    Reservation -> DB : créerNotificationRéservation(id_etudiant)
+                end
+
+                Reservation -> DB : validerTransaction()
+                Reservation --> Catalogue : Afficher confirmation\n"Réservation enregistrée avec succès !"
+            end
+        end
+    end
+end
+
+@enduml

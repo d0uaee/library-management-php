@@ -1,0 +1,63 @@
+@startuml
+title Évaluation d'un livre
+
+actor "Étudiant" as Etudiant
+boundary "Interface du catalogue" as IHM
+control "Gestion des évaluations" as Evaluation
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+Etudiant -> IHM : Noter un livre
+IHM -> Evaluation : Soumettre l'évaluation(id_livre, note)
+
+Evaluation -> Security : vérifierAccèsÉtudiant()
+Security --> Evaluation : accès autorisé
+
+alt Méthode non autorisée
+    Evaluation --> IHM : Retourner erreur\n"Méthode non autorisée"
+
+else Requête valide
+    Evaluation -> Evaluation : lireDonnéesÉvaluation()
+
+    alt Livre invalide
+        Evaluation --> IHM : Retourner erreur\n"Livre invalide"
+
+    else Note invalide
+        Evaluation --> IHM : Retourner erreur\n"Note invalide."
+
+    else Données valides
+        Evaluation -> DB : récupérerÉvaluationÉtudiant(id_livre, id_etudiant)
+        DB --> Evaluation : évaluation existante / aucune évaluation
+
+        alt note = 0
+            alt Évaluation existante
+                Evaluation -> DB : supprimerÉvaluation(id_livre, id_etudiant)
+            else Aucune évaluation existante
+                note right
+                    Le traitement retourne tout de même
+                    un succès avec le message
+                    "Aucune évaluation à retirer".
+                end note
+            end
+
+        else Même note déjà enregistrée
+            Evaluation -> DB : supprimerÉvaluation(id_livre, id_etudiant)
+
+        else Évaluation existante avec note différente
+            Evaluation -> DB : mettreÀJourÉvaluation(id_livre, id_etudiant, note)
+
+        else Aucune évaluation existante
+            Evaluation -> DB : créerÉvaluation(id_livre, id_etudiant, note)
+        end
+
+        Evaluation -> DB : calculerStatistiquesÉvaluation(id_livre)
+        DB --> Evaluation : moyenne + nombre d'évaluations
+
+        Evaluation -> DB : récupérerNoteUtilisateur(id_livre, id_etudiant)
+        DB --> Evaluation : note finale / aucune note
+
+        Evaluation --> IHM : Retourner résultat\n(message, nouvelle_moyenne,\nnb_évaluations, note_utilisateur)
+    end
+end
+
+@enduml

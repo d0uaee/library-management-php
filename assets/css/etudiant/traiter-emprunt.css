@@ -1,0 +1,149 @@
+* {
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+
+.confirmation-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 25px 30px;
+}
+
+.card-header h2 {
+    margin: 0;
+    font-weight: 700;
+}
+
+.livre-info {
+    display: flex;
+    gap: 30px;
+    padding: 30px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    margin: 20px 0;
+}
+
+.livre-image {
+    width: 200px;
+    height: 280px;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.livre-details {
+    flex: 1;
+}
+
+.livre-details h3 {
+    color: #333;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.detail-row {
+    display: flex;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #666;
+    width: 150px;
+}
+
+.detail-value {
+    color: #333;
+}
+
+.conditions-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.conditions-box h5 {
+    color: #856404;
+    margin-bottom: 15px;
+}
+
+.conditions-box ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.conditions-box li {
+    margin-bottom: 8px;
+    color: #856404;
+}
+
+.btn-confirm {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.btn-cancel {
+    background: white;
+    color: #666;
+    border: 2px solid #ddd;
+    padding: 15px 40px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-cancel:hover {
+    background: #f8f9fa;
+    border-color: #999;
+    color: #333;
+}
+
+.alert-custom {
+    border-radius: 10px;
+    border: none;
+    padding: 20px;
+}
+
+.stars {
+    color: #ffd700;
+    font-size: 1.2rem;
+}

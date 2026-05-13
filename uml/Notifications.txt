@@ -1,0 +1,52 @@
+@startuml
+title Notifications — Étudiant
+
+actor "Étudiant" as Etudiant
+boundary "Interface des notifications" as IHM
+control "Gestion des notifications" as Notifications
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+group Consultation des notifications
+    Etudiant -> IHM : Ouvrir les notifications
+    IHM -> Notifications : Demander la liste des notifications
+
+    Notifications -> Security : vérifierAccèsÉtudiant()
+    Security --> Notifications : accès autorisé
+
+    Notifications -> DB : récupérerNotificationsÉtudiant(id_etudiant)
+    DB --> Notifications : liste des notifications
+
+    Notifications -> DB : compterNotificationsNonLues(id_etudiant)
+    DB --> Notifications : nombre non lues
+
+    Notifications --> IHM : Afficher la liste\net le compteur des non lues
+end
+
+opt Marquer une notification comme lue
+    Etudiant -> IHM : Demander le marquage d'une notification
+    IHM -> Notifications : Soumettre le marquage(id_notification)
+
+    Notifications -> Security : vérifierAccèsÉtudiant()
+    Security --> Notifications : accès autorisé
+
+    Notifications -> DB : marquerNotificationCommeLue(id_notification, id_etudiant)
+    DB --> Notifications : mise à jour effectuée
+
+    Notifications --> IHM : Afficher succès\n"Notification marquée comme lue."
+end
+
+opt Marquer toutes les notifications comme lues
+    Etudiant -> IHM : Demander le marquage global
+    IHM -> Notifications : Soumettre le marquage global
+
+    Notifications -> Security : vérifierAccèsÉtudiant()
+    Security --> Notifications : accès autorisé
+
+    Notifications -> DB : marquerToutesNotificationsCommeLues(id_etudiant)
+    DB --> Notifications : mises à jour effectuées
+
+    Notifications --> IHM : Afficher succès\n"Toutes les notifications ont été marquées comme lues."
+end
+
+@enduml

@@ -1,0 +1,112 @@
+@startuml
+title Diagramme global du système — Bibliothèque ENSAM Meknès
+
+actor "Étudiant" as Etudiant
+actor "Admin" as Admin
+boundary "Interface utilisateur" as IHM
+control "Authentification" as Auth
+control "Catalogue" as Catalogue
+control "Gestion des emprunts" as Emprunts
+control "Gestion des réservations" as Reservations
+control "Messagerie" as Messagerie
+control "Gestion des pénalisations" as Penalisation
+control "Gestion des notifications" as Notifications
+control "Gestion des évaluations" as Evaluation
+control "Maintenance" as Maintenance
+database "Base de données" as DB
+
+== Authentification ==
+
+Etudiant -> IHM : Se connecter
+IHM -> Auth : Authentifier étudiant
+Auth -> DB : Vérifier compte étudiant
+Auth --> IHM : Ouvrir session étudiant
+
+Admin -> IHM : Se connecter
+IHM -> Auth : Authentifier admin
+Auth -> DB : Vérifier compte admin
+Auth --> IHM : Ouvrir session admin
+
+== Espace étudiant ==
+
+Etudiant -> IHM : Consulter le catalogue
+IHM -> Catalogue : Demander les livres
+Catalogue -> DB : Récupérer le catalogue
+
+opt Demander un emprunt
+    Etudiant -> IHM : Demander un emprunt
+    IHM -> Emprunts : Soumettre la demande
+    Emprunts -> DB : Créer demande + réserver exemplaire
+end
+
+opt Réserver un livre
+    Etudiant -> IHM : Réserver un livre
+    IHM -> Reservations : Soumettre la réservation
+    Reservations -> DB : Vérifier conditions + créer réservation
+end
+
+opt Annuler une réservation
+    Etudiant -> IHM : Annuler une réservation
+    IHM -> Reservations : Demander l'annulation
+    Reservations -> DB : Vérifier puis supprimer réservation
+end
+
+opt Envoyer un message
+    Etudiant -> IHM : Envoyer un message
+    IHM -> Messagerie : Soumettre le message
+    Messagerie -> DB : Créer message étudiant
+end
+
+opt Consulter les notifications
+    Etudiant -> IHM : Consulter les notifications
+    IHM -> Notifications : Demander les notifications
+    Notifications -> DB : Récupérer et marquer les notifications
+end
+
+opt Évaluer un livre
+    Etudiant -> IHM : Noter un livre
+    IHM -> Evaluation : Soumettre une évaluation
+    Evaluation -> DB : Créer / modifier / supprimer l'évaluation
+end
+
+== Espace admin ==
+
+opt Valider une demande
+    Admin -> IHM : Valider une demande
+    IHM -> Emprunts : Soumettre la validation
+    Emprunts -> DB : Créer emprunt + supprimer demande
+end
+
+opt Refuser une demande
+    Admin -> IHM : Refuser une demande
+    IHM -> Emprunts : Soumettre le refus
+    Emprunts -> DB : Supprimer demande + libérer exemplaire
+end
+
+opt Enregistrer un retour
+    Admin -> IHM : Enregistrer un retour
+    IHM -> Emprunts : Soumettre le retour
+    Emprunts -> DB : Mettre à jour emprunt + stock
+end
+
+opt Répondre à un message
+    Admin -> IHM : Répondre à un étudiant
+    IHM -> Messagerie : Soumettre la réponse
+    Messagerie -> DB : Créer réponse + notification
+end
+
+opt Gérer les pénalisations
+    Admin -> IHM : Pénaliser ou réactiver un étudiant
+    IHM -> Penalisation : Soumettre l'action
+    Penalisation -> DB : Créer / supprimer pénalisation + mettre à jour le compte
+end
+
+== Maintenance ==
+
+Admin -> IHM : Ouvrir le tableau de bord
+IHM -> Maintenance : Déclencher la maintenance
+Maintenance -> DB : Réactiver pénalités expirées
+Maintenance -> DB : Supprimer demandes expirées
+Maintenance -> DB : Promouvoir réservations si applicable
+
+@enduml

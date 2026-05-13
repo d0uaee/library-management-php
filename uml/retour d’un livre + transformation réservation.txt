@@ -1,0 +1,54 @@
+@startuml
+title Retour d'un livre + transformation d'une réservation
+
+actor "Admin" as Admin
+boundary "Interface d'administration" as IHM
+control "Gestion admin des emprunts" as Emprunts
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+Admin -> IHM : Demander l'enregistrement d'un retour
+IHM -> Emprunts : Soumettre le retour(id_emprunt)
+
+Emprunts -> Security : vérifierAccèsAdmin()
+Security --> Emprunts : accès autorisé
+
+Emprunts -> DB : ouvrirTransaction()
+
+Emprunts -> DB : récupérerEmpruntActif(id_emprunt)
+DB --> Emprunts : emprunt / aucun emprunt
+
+alt Emprunt introuvable
+    Emprunts -> DB : annulerTransaction()
+    Emprunts --> IHM : Afficher erreur\n"Emprunt en cours introuvable."
+
+else Emprunt trouvé
+    Emprunts -> Emprunts : évaluerRetardRetour()
+    note right
+        Le retard est calculé dans le traitement,
+        mais n'entraîne aucun traitement
+        supplémentaire ici.
+    end note
+
+    Emprunts -> DB : enregistrerRetourEmprunt(id_emprunt)
+    Emprunts -> DB : remettreExemplaireDisponible(id_livre)
+
+    Emprunts -> DB : récupérerPremièreRéservationEnAttente(id_livre)
+    DB --> Emprunts : réservation / aucune réservation
+
+    alt Réservation en attente trouvée
+        Emprunts -> DB : créerDemandeDepuisRéservation(id_etudiant_réservataire, id_livre)
+        Emprunts -> DB : réserverExemplaireDisponible(id_livre)
+        Emprunts -> DB : créerNotificationPromotionRéservation(id_etudiant_réservataire)
+        Emprunts -> DB : supprimerRéservation(id_reservation)
+
+        Emprunts -> DB : validerTransaction()
+        Emprunts --> IHM : Afficher succès\n"Retour enregistré. Réservation promue en demande."
+
+    else Aucune réservation en attente
+        Emprunts -> DB : validerTransaction()
+        Emprunts --> IHM : Afficher succès\n"Retour enregistré. Le livre est de nouveau disponible."
+    end
+end
+
+@enduml

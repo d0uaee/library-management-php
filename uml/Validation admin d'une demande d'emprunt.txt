@@ -1,0 +1,60 @@
+@startuml
+title Validation admin d'une demande d'emprunt
+
+actor "Admin" as Admin
+boundary "Interface d'administration" as IHM
+control "Gestion admin des emprunts" as Emprunts
+control "Service de sécurité" as Security
+database "Base de données" as DB
+
+Admin -> IHM : Demander la validation d'une demande
+IHM -> Emprunts : Soumettre la validation(id_demande)
+
+Emprunts -> Security : vérifierAccèsAdmin()
+Security --> Emprunts : accès autorisé
+
+Emprunts -> DB : ouvrirTransaction()
+
+Emprunts -> DB : récupérerDemandeEtDisponibilitéBibliothèque(id_demande)
+DB --> Emprunts : demande + livre / aucune demande
+
+alt Demande introuvable
+    Emprunts -> DB : annulerTransaction()
+    Emprunts --> IHM : Afficher erreur\n"Demande introuvable."
+
+else Demande trouvée
+    alt Aucun exemplaire en bibliothèque
+        Emprunts -> DB : annulerTransaction()
+        Emprunts --> IHM : Afficher erreur\n"Le livre n'est plus disponible."
+
+    else Exemplaire disponible
+        Emprunts -> DB : compterEmpruntsActifs(id_etudiant)
+        DB --> Emprunts : nombre d'emprunts actifs
+
+        alt Limite d'emprunts atteinte
+            Emprunts -> DB : annulerTransaction()
+            Emprunts --> IHM : Afficher erreur\n"Limite d'emprunts atteinte."
+
+        else Validation autorisée
+            Emprunts -> DB : affecterExemplaireBibliothèque(id_livre)
+            DB --> Emprunts : affectation réussie / échouée
+
+            alt Affectation échouée
+                Emprunts -> DB : annulerTransaction()
+                Emprunts --> IHM : Afficher erreur\n"Erreur de mise à jour de disponibilité."
+
+            else Affectation réussie
+                Emprunts -> Emprunts : définirPériodeEmprunt()
+
+                Emprunts -> DB : créerEmpruntActif(id_etudiant, id_livre, date_emprunt, date_retour_prévue)
+                Emprunts -> DB : supprimerDemandeEmprunt(id_demande)
+                Emprunts -> DB : créerNotificationValidation(id_etudiant)
+
+                Emprunts -> DB : validerTransaction()
+                Emprunts --> IHM : Afficher succès\n"Emprunt validé et enregistré."
+            end
+        end
+    end
+end
+
+@enduml
