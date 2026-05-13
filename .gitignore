@@ -2,3 +2,5 @@
 config/db_credentials.php
 *.log
 __pycache__/
+project/mariadb-data/
+project/*.pid
